@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventura Interactiva · Campus Virtual UNMa</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        unma: {
+                            dark: '#0f2133',
+                            primary: '#132f4c',
+                            medium: '#1d5585',
+                            accent: '#2466a0',
+                            light: '#e1edf9',
+                            bg: '#f4f7fa',
+                            gold: '#d97706'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Segoe+UI:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Segoe UI', 'Open Sans', Arial, sans-serif;
+            background-color: #f4f7fa;
+            color: #1e293b;
+        }
+        .gradient-unma {
+            background: linear-gradient(120deg, rgb(19, 47, 76) 0%, rgb(29, 85, 133) 70%, rgb(36, 102, 160) 100%);
+        }
+        .btn-option {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(29, 85, 133, 0.15);
+        }
+        .card-anim {
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
+
+    <!-- App Container -->
+    <div id="app" class="max-w-4xl w-full mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col card-anim">
+        
+        <!-- Header -->
+        <header class="gradient-unma text-white p-5 sm:p-7 relative">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <span class="inline-block px-3 py-1 bg-white/20 border border-white/40 rounded-full text-xs font-bold tracking-wider uppercase">
+                    UNMa · SEMINARIO DE INGRESO
+                </span>
+                <div class="flex items-center gap-3">
+                    <button id="soundToggle" onclick="toggleSound()" class="text-xs bg-white/10 hover:bg-white/20 border border-white/30 px-3 py-1 rounded-full flex items-center gap-1 transition">
+                        <span id="soundIcon">🔊</span> <span id="soundText">Sonido</span>
+                    </button>
+                    <span id="stepBadge" class="hidden text-xs bg-amber-500 text-slate-900 font-bold px-3 py-1 rounded-full">
+                        Tema 1 de 7
+                    </span>
+                </div>
+            </div>
+            <h1 id="headerTitle" class="text-2xl sm:text-3xl font-bold leading-tight">
+                Herramientas y Espacios del Campus Virtual
+            </h1>
+            <p id="headerSubtitle" class="text-slate-200 text-sm mt-1">Módulo 2 · Aventura Interactiva</p>
+
+            <!-- Progress Bar -->
+            <div id="progressContainer" class="hidden w-full bg-black/20 h-2 rounded-full mt-5 overflow-hidden">
+                <div id="progressBar" class="bg-amber-400 h-full w-0 transition-all duration-500"></div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="p-5 sm:p-8 flex-1 flex flex-col justify-between">
+            
+            <!-- Graphic / Scene Illustration -->
+            <div id="sceneGraphic" class="w-full h-44 sm:h-52 bg-slate-100 rounded-lg border border-slate-200 mb-6 flex items-center justify-center relative overflow-hidden">
+                <!-- Dynamic SVG will be injected here -->
+            </div>
+
+            <!-- Story / Question Text -->
+            <div class="mb-6 flex-1">
+                <h2 id="sceneTitle" class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+                    Cargando escena...
+                </h2>
+                <div id="sceneBody" class="text-slate-700 text-base sm:text-lg leading-relaxed space-y-3">
+                    <!-- Dynamic Body Text -->
+                </div>
+            </div>
+
+            <!-- Options / Action Area -->
+            <div id="actionArea" class="space-y-3 pt-4 border-t border-slate-100">
+                <!-- Dynamic Buttons -->
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-slate-50 p-4 border-t border-slate-200 text-center text-xs text-slate-500 flex justify-between items-center flex-wrap gap-2">
+            <span>Universidad Nacional Madres de Plaza de Mayo</span>
+            <span>Seminario de Ingreso 2026</span>
+        </footer>
+
+    </div>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        // Web Audio API Sound Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.08);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'error') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                }
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+            document.getElementById('soundText').innerText = soundEnabled ? 'Sonido' : 'Mute';
+        }
+
+        // SVG Illustrations Generator
+        function getSVG(type) {
+            const svgs = {
+                night: `<svg class="w-24 h-24 text-unma-medium opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2zM12 6v6l2 2"/></svg>`,
+                error: `<svg class="w-24 h-24 text-red-500 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
+                mail: `<svg class="w-24 h-24 text-unma-accent opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
+                dashboard: `<svg class="w-24 h-24 text-unma-medium opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>`,
+                classroom: `<svg class="w-24 h-24 text-unma-accent opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`,
+                file: `<svg class="w-24 h-24 text-amber-600 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
+                forum: `<svg class="w-24 h-24 text-unma-medium opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/></svg>`,
+                upload: `<svg class="w-24 h-24 text-emerald-600 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+                video: `<svg class="w-24 h-24 text-unma-accent opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>`,
+                feedback: `<svg class="w-24 h-24 text-amber-500 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>`,
+                trophy: `<svg class="w-24 h-24 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2 0h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>`
+            };
+            return svgs[type] || svgs.classroom;
+        }
+
+        // State Tracking Variables
+        let currentScene = 'intro';
+        let firstTryAttempts = {}; // Stores theme_id -> boolean (true if correct on first try)
+        let totalThemesCount = 7;
+
+        // Data Model
+        const gameData = {
+            intro: {
+                title: "Lunes 23 de noviembre, a la noche",
+                graphic: "night",
+                body: "Mañana arranca tu Seminario de Ingreso en la UNMa. Ya te anotaste, ya te llegó el mail con tu usuario y tenés un nudo en la panza que es mitad entusiasmo, mitad nervios.<br><br>Esta no va a ser una semana perfecta, y no tiene que serlo. Vas a tomar decisiones: algunas te van a salir bien a la primera y otras te van a enseñar un atajo. En los dos casos, el camino te muestra cómo seguir.<br><br>Dejás el celular cargando. Mañana, a primera hora, el campus te espera.",
+                options: [
+                    { text: "Empezar la aventura", target: "c1", type: "start" }
+                ]
+            },
+
+            // Tema 1: Acceso y soporte
+            c1: {
+                themeId: 1,
+                badge: "Tema 1 de 7 · Acceso y Soporte",
+                progress: 14,
+                graphic: "error",
+                title: "Martes, 7:50 · La puerta del campus",
+                body: "Abrís el campus desde el celular, escribís tu usuario y tu contraseña y aparece un cartel rojo: <strong>«Usuario o contraseña incorrectos»</strong>.<br><br>Ya lo intentaste dos veces y el reloj no espera. ¿Qué hacés?",
+                options: [
+                    { text: "Lo intento otra vez, y otra, hasta que salga.", target: "x1a", isCorrect: false },
+                    { text: "Toco «¿Olvidó su contraseña?» y reviso mi correo, incluida la carpeta de spam.", target: "s1", isCorrect: true },
+                    { text: "Le pido la contraseña a una compañera para entrar con su cuenta.", target: "x1c", isCorrect: false }
+                ]
+            },
+            x1a: {
+                graphic: "error",
+                title: "Demasiados intentos",
+                body: "Al cuarto intento, el campus puede frenarte por un rato. Cada intento a ciegas te gasta tiempo y paciencia, y encima corrés el riesgo de quedar bloqueado/a.<br><br>Hay una puerta lateral pensada justo para esto.",
+                options: [{ text: "Volver a decidir", target: "c1", type: "retry" }]
+            },
+            x1c: {
+                graphic: "error",
+                title: "Una cuenta es una persona",
+                body: "Entrar con la cuenta de otra persona no es un atajo: todo lo que hagas queda a su nombre y su cuenta queda expuesta. La contraseña —la tuya y la de ella— es personal.<br><br>Además, el problema es tuyo y se resuelve con tus datos.",
+                options: [{ text: "Volver a decidir", target: "c1", type: "retry" }]
+            },
+            s1: {
+                graphic: "mail",
+                title: "Diez minutos después",
+                body: "Tocaste «¿Olvidó su contraseña?», pusiste tu correo y... nada. Revisaste la bandeja de entrada, el spam, hasta «promociones». El mail de recuperación no llega.<br><br>Va a hacer falta ayuda de verdad. Y pedir ayuda también se hace bien o mal.",
+                options: [{ text: "Seguir", target: "c2", type: "next" }]
+            },
+
+            c2: {
+                themeId: 1,
+                badge: "Tema 1 de 7 · Acceso y Soporte",
+                progress: 20,
+                graphic: "mail",
+                title: "Pedir ayuda, bien",
+                body: "Decidís escribirle al soporte del campus. Tenés tres borradores en la pantalla. ¿Cuál mandás?",
+                options: [
+                    { text: "«Asunto: AYUDA. Mensaje: no puedo entrar!!! es urgente».", target: "x2a", isCorrect: false },
+                    { text: "«Hola, mi usuario es [usuario] y mi contraseña es [contraseña]. Revísenla ustedes, por favor».", target: "x2c", isCorrect: false },
+                    { text: "«Asunto: No puedo ingresar, el mail de recuperación no llega. Hola, soy [tu nombre], usuario [tu usuario]. Entro desde el celular (Chrome) y aparece Usuario o contraseña incorrectos...»", target: "s2", isCorrect: true }
+                ]
+            },
+            x2a: {
+                graphic: "mail",
+                title: "Cinco preguntas de vuelta",
+                body: "La respuesta llega rápido, pero no te soluciona nada: te hacen cinco preguntas. ¿Quién sos? ¿Qué intentaste? ¿Qué error aparece? ¿Desde qué dispositivo? ¿Qué probaste?<br><br>Un mensaje sin datos obliga a empezar de cero. Mejor mandarlo completo desde la primera vez.",
+                options: [{ text: "Volver a decidir", target: "c2", type: "retry" }]
+            },
+            x2c: {
+                graphic: "mail",
+                title: "Nunca la contraseña",
+                body: "Compartir tu contraseña, aunque sea con el soporte, es una mala idea: nadie del equipo te la va a pedir, nunca. Si alguien lo hace, es una señal de fraude.<br><br>Lo que sí necesitan son tus datos de identificación y qué te pasa, no tu clave.",
+                options: [{ text: "Volver a decidir", target: "c2", type: "retry" }]
+            },
+            s2: {
+                graphic: "dashboard",
+                title: "Estás adentro",
+                body: "Te responden en una hora, restablecen tu acceso y entrás. El Área personal se abre ante vos como un tablero lleno de bloques.<br><br>Guardás tu usuario donde no lo pierdas. Primera batalla, ganada.",
+                options: [{ text: "Seguir", target: "c3", type: "next" }]
+            },
+
+            // Tema 2: Área personal y navegación
+            c3: {
+                themeId: 2,
+                badge: "Tema 2 de 7 · Área personal y Notificaciones",
+                progress: 30,
+                graphic: "dashboard",
+                title: "El tablero",
+                body: "Buscás el aula del Seminario en «Mis cursos»... y no está. Tu compañera, en el chat del grupo, dice que ya recibió un aviso del equipo docente. A vos no te llegó nada.<br><br>Dos problemas distintos y un mismo tablero. ¿Qué hacés primero?",
+                options: [
+                    { text: "Reviso el filtro de «Mis cursos» y mis preferencias de notificación.", target: "s3", isCorrect: true },
+                    { text: "Creo otra cuenta con otro mail, a ver si así aparece el aula.", target: "x3a", isCorrect: false },
+                    { text: "Espero. Seguro mañana aparece solo.", target: "x3c", isCorrect: false }
+                ]
+            },
+            x3a: {
+                graphic: "dashboard",
+                title: "Dos cuentas, un lío",
+                body: "Con otra cuenta, tu inscripción sigue en la primera: el aula seguiría sin aparecer y ahora el equipo tendría que unificar identidades. Duplicar cuentas complica tu seguimiento.<br><br>Antes de crear algo nuevo, conviene revisar lo que ya tenés.",
+                options: [{ text: "Volver a decidir", target: "c3", type: "retry" }]
+            },
+            x3c: {
+                graphic: "dashboard",
+                title: "Esperar no alcanza",
+                body: "Si no ves el aula ni los avisos, te podés perder el enlace del encuentro en vivo y la bienvenida. Las causas más comunes están a dos clics.",
+                options: [{ text: "Volver a decidir", target: "c3", type: "retry" }]
+            },
+            s3: {
+                graphic: "classroom",
+                title: "Todo en su lugar",
+                body: "El filtro de «Mis cursos» estaba en «Recientes». Lo cambiás a «Todos» y ahí aparece el aula del Seminario. En Preferencias › Notificaciones activás los avisos de foros y mensajes, en el campus y por correo.<br><br>De yapa, cargás en tu calendario la hora del encuentro en vivo. Sentís que el tablero empieza a ser tuyo.",
+                options: [{ text: "Seguir", target: "c4", type: "next" }]
+            },
+
+            // Tema 3: Organización del aula
+            c4: {
+                themeId: 3,
+                badge: "Tema 3 de 7 · Organización y Consignas",
+                progress: 42,
+                graphic: "classroom",
+                title: "Adentro del aula",
+                body: "Entrás al aula. Hay pestañas, secciones, archivos, un foro, una tarea y un enlace a un encuentro. Querés saber qué hay que hacer, cómo se entrega y para cuándo. ¿Cómo empezás?",
+                options: [
+                    { text: "Abro todo lo que veo, a ver qué sale.", target: "x4a", isCorrect: false },
+                    { text: "Miro el mapa de la pestaña y, en cada actividad, busco cuatro datos: qué hacer, cómo se entrega, cuándo cierra y si puedo usar IA.", target: "s4", isCorrect: true },
+                    { text: "Leo solo los títulos y me guío por eso.", target: "x4c", isCorrect: false }
+                ]
+            },
+            x4a: {
+                graphic: "classroom",
+                title: "Doce pestañas abiertas",
+                body: "Abrís de todo, en cualquier orden. Pasa una hora y sigue sin quedarte claro qué es obligatorio y qué es de consulta.",
+                options: [{ text: "Volver a decidir", target: "c4", type: "retry" }]
+            },
+            x4c: {
+                graphic: "classroom",
+                title: "La fecha estaba adentro",
+                body: "Los títulos cuentan de qué se trata, pero la fecha de cierre y la forma de entrega estaban dentro de la consigna. Si te guiás solo por el título, te podés perder el plazo.",
+                options: [{ text: "Volver a decidir", target: "c4", type: "retry" }]
+            },
+            s4: {
+                graphic: "file",
+                title: "Mapa en mano",
+                body: "En diez minutos tenés el panorama: un foro de presentación, una práctica con un documento y un encuentro en vivo. Descargás la plantilla del plan de trabajo.<br><br>El archivo se baja... pero en el celular no se abre.",
+                options: [{ text: "Seguir", target: "c5", type: "next" }]
+            },
+
+            c5: {
+                themeId: 3,
+                badge: "Tema 3 de 7 · Organización y Consignas",
+                progress: 52,
+                graphic: "file",
+                title: "El archivo que no abre",
+                body: "El celular dice que no puede abrir el archivo que acabás de descargar. ¿Qué hacés?",
+                options: [
+                    { text: "Lo abro con otra aplicación (un lector de documentos) o uso la opción de texto en línea de la entrega.", target: "s5", isCorrect: true },
+                    { text: "Le saco una foto a la pantalla y entrego eso.", target: "x5c", isCorrect: false },
+                    { text: "Lo dejo para otro día.", target: "x5a", isCorrect: false }
+                ]
+            },
+            x5a: {
+                graphic: "file",
+                title: "Postergar es acumular",
+                body: "Dejarlo para otro día es la forma más corta de llegar apurado/a a la fecha de cierre. Antes de rendirte, hay dos o tres caminos para probar.",
+                options: [{ text: "Volver a decidir", target: "c5", type: "retry" }]
+            },
+            x5c: {
+                graphic: "file",
+                title: "Una foto no es una entrega",
+                body: "Una captura de pantalla no se puede revisar ni completar. Lo que se entrega es el documento, o el texto escrito en la propia plataforma.",
+                options: [{ text: "Volver a decidir", target: "c5", type: "retry" }]
+            },
+            s5: {
+                graphic: "forum",
+                title: "Plan B listo",
+                body: "Instalás un lector de documentos y la plantilla se abre. Y si no hubiera abierto, tenías la opción de escribir directamente en el cuadro de la entrega.<br><br>Mientras armás tu plan, te surge una duda con la consigna del foro de presentación: ¿hay que responder a los demás o alcanza con publicar?",
+                options: [{ text: "Seguir", target: "c6", type: "next" }]
+            },
+
+            // Tema 4: Comunicación
+            c6: {
+                themeId: 4,
+                badge: "Tema 4 de 7 · Comunicación Institucional",
+                progress: 65,
+                graphic: "forum",
+                title: "Una duda y tres lugares donde escribirla",
+                body: "Querés preguntar sin hacer ruido de más. En el aula ves un foro de avisos, un foro de consultas y la opción de mandar un mensaje privado al equipo. ¿Dónde escribís?",
+                options: [
+                    { text: "En el foro de avisos, que es el primero que veo.", target: "x6a", isCorrect: false },
+                    { text: "Le escribo por WhatsApp a quien tenga el número de un compañero.", target: "x6c", isCorrect: false },
+                    { text: "En el foro de consultas, con un asunto claro y contando qué ya leí.", target: "s6", isCorrect: true }
+                ]
+            },
+            x6a: {
+                graphic: "forum",
+                title: "Solo lectura",
+                body: "El foro de avisos es solo para leer: lo usa el equipo docente para comunicar. No te deja publicar y, aunque te dejara, nadie esperaría tu consulta ahí.",
+                options: [{ text: "Volver a decidir", target: "c6", type: "retry" }]
+            },
+            x6c: {
+                graphic: "forum",
+                title: "La duda se queda en un chat",
+                body: "Una respuesta por WhatsApp puede ser correcta o no, y no le sirve al resto del grupo. En el aula, la respuesta queda a la vista de todos.",
+                options: [{ text: "Volver a decidir", target: "c6", type: "retry" }]
+            },
+            s6: {
+                graphic: "upload",
+                title: "Una pregunta que sirve",
+                body: "Escribís: «Hola. En la consigna del foro de presentación no me quedó claro si hay que responder a otros compañeros. Ya leí la consigna completa y el mapa. ¿Alguien me lo confirma?».<br><br>En unas horas tenés respuesta del equipo, y una compañera te agradece: tenía la misma duda.",
+                options: [{ text: "Seguir", target: "c7", type: "next" }]
+            },
+
+            // Tema 5: Entrega de tareas
+            c7: {
+                themeId: 5,
+                badge: "Tema 5 de 7 · Entrega de Actividades",
+                progress: 78,
+                graphic: "upload",
+                title: "El documento y el botón que faltaba",
+                body: "Completaste tu plan de trabajo en un documento y lo subiste con el nombre «Documento1». Escribiste «listo» y te fuiste a dormir.<br><br>A la mañana, el docente avisa: «No veo tu entrega». Entrás a la actividad y leés: <strong>«Borrador (no enviado)»</strong>. ¿Qué hacés?",
+                options: [
+                    { text: "Le escribo que ya lo hice y que me crea.", target: "x7a", isCorrect: false },
+                    { text: "Pulso «Enviar tarea», verifico que diga «Enviado» y edito la entrega para ponerle un nombre claro: Apellido_Nombre_PlanDeTrabajo.", target: "s7", isCorrect: true },
+                    { text: "Subo el mismo archivo de nuevo, y otra vez, por las dudas.", target: "x7c", isCorrect: false }
+                ]
+            },
+            x7a: {
+                graphic: "upload",
+                title: "Creer no alcanza",
+                body: "Un mensaje no reemplaza a la entrega: si queda como borrador, el docente no la ve. El botón de enviar es el último paso, y es tuyo.",
+                options: [{ text: "Volver a decidir", target: "c7", type: "retry" }]
+            },
+            x7c: {
+                graphic: "upload",
+                title: "Tres archivos, ningún envío",
+                body: "Subir de nuevo no cambia el estado: sigue en borrador. Y ahora hay tres versiones y ninguna enviada.",
+                options: [{ text: "Volver a decidir", target: "c7", type: "retry" }]
+            },
+            s7: {
+                graphic: "video",
+                title: "Enviado",
+                body: "La actividad ahora dice «Enviado para calificar». Mientras esté abierta, podés editarla: aprendiste que una entrega no es un punto final, sino un borrador que podés mejorar.<br><br>Además, ordenás tus archivos: una carpeta «Seminario de Ingreso» con una subcarpeta por módulo. Dentro de un mes vas a agradecerlo.",
+                options: [{ text: "Seguir", target: "c8", type: "next" }]
+            },
+
+            // Tema 6: Sincrónico / Asincrónico
+            c8: {
+                themeId: 6,
+                badge: "Tema 6 de 7 · Encuentros Sincrónicos",
+                progress: 88,
+                graphic: "video",
+                title: "El encuentro en vivo",
+                body: "Se acerca un encuentro por videoconferencia con el equipo y querés llegar bien. ¿Cómo te preparás?",
+                options: [
+                    { text: "Entro justo a la hora, con el celular al 5 % de batería.", target: "x8a", isCorrect: false },
+                    { text: "No me preparo: si algo pasa, queda la grabación.", target: "x8c", isCorrect: false },
+                    { text: "Pruebo el micrófono y la conexión, cargo el celular y entro unos minutos antes. Adentro, silencio el micrófono y uso el chat para preguntar.", target: "s8", isCorrect: true }
+                ]
+            },
+            x8a: {
+                graphic: "video",
+                title: "A mitad de camino, sin batería",
+                body: "Entrás con el tiempo justo, la batería se agota a la mitad y se te cae la conexión. Te perdés lo mejor.<br><br>Prepararse lleva cinco minutos y evita este tipo de sustos.",
+                options: [{ text: "Volver a decidir", target: "c8", type: "retry" }]
+            },
+            x8c: {
+                graphic: "video",
+                title: "La grabación no te escucha",
+                body: "Es cierto que queda grabado, pero una grabación no responde preguntas ni te deja participar. Y si no probás el audio de antemano, te enterás del problema cuando ya empezó.",
+                options: [{ text: "Volver a decidir", target: "c8", type: "retry" }]
+            },
+            s8: {
+                graphic: "video",
+                title: "Un encuentro que fluye",
+                body: "Entrás con tiempo, probás el audio y te quedás con el micrófono silenciado hasta que te toca hablar. Cuando tenés una duda, la escribís en el chat. Al cierre, el equipo recuerda que lo demás queda en los tutoriales del aula.<br><br>Esta vez saliste bien. Pero la vida pasa: ¿qué pasaría si un día no pudieras asistir?",
+                options: [{ text: "Seguir", target: "c9", type: "next" }]
+            },
+
+            c9: {
+                themeId: 6,
+                badge: "Tema 6 de 7 · Encuentros Sincrónicos",
+                progress: 92,
+                graphic: "video",
+                title: "Cuando no podés estar",
+                body: "Hay otro encuentro en vivo y justo ese día se te cruza un compromiso. No vas a poder conectarte. ¿Qué hacés?",
+                options: [
+                    { text: "Nada: el curso es asincrónico, así que no hay plazos.", target: "x9a", isCorrect: false },
+                    { text: "Aviso en el foro de consultas, miro la grabación y los tutoriales, y cumplo las fechas de las actividades.", target: "s9", isCorrect: true },
+                    { text: "Dejo de entrar al aula: ya me perdí lo importante.", target: "x9c", isCorrect: false }
+                ]
+            },
+            x9a: {
+                graphic: "video",
+                title: "Asincrónico no es sin plazos",
+                body: "Asincrónico quiere decir que no todos coinciden en el mismo momento, no que no haya fechas. Las actividades siguen teniendo su cierre.",
+                options: [{ text: "Volver a decidir", target: "c9", type: "retry" }]
+            },
+            x9c: {
+                graphic: "video",
+                title: "Perder un encuentro no es perderlo todo",
+                body: "Un encuentro perdido tiene remedio: la grabación, los tutoriales y el foro de consultas. Abandonar el aula es lo único que no se puede recuperar.",
+                options: [{ text: "Volver a decidir", target: "c9", type: "retry" }]
+            },
+            s9: {
+                graphic: "feedback",
+                title: "Seguís en carrera",
+                body: "Avisás, mirás la grabación con un mate y repasás los tutoriales del tema. Llegás a la próxima actividad al día.",
+                options: [{ text: "Seguir", target: "c10", type: "next" }]
+            },
+
+            // Tema 7: Devoluciones
+            c10: {
+                themeId: 7,
+                badge: "Tema 7 de 7 · Devoluciones docentes",
+                progress: 98,
+                graphic: "feedback",
+                title: "La devolución",
+                body: "Llega la devolución del docente sobre tu plan de trabajo. En «Calificaciones» ves un casillero vacío. En la actividad, dos comentarios: «Buen reparto de los primeros días» y «Falta un plan B para imprevistos y no figura la entrega final». ¿Cómo la leés?",
+                options: [
+                    { text: "Leo los comentarios, marco lo que salió bien, elijo dos cosas para cambiar y actualizo mi plan y mi calendario.", target: "end", isCorrect: true },
+                    { text: "Veo el casillero vacío y me asusto: seguro estoy aplazado/a.", target: "x10a", isCorrect: false },
+                    { text: "Los ignoro: ya entregué, ya está.", target: "x10c", isCorrect: false }
+                ]
+            },
+            x10a: {
+                graphic: "feedback",
+                title: "El casillero vacío no es un cero",
+                body: "En este seminario, lo que cuenta es completar las actividades y participar, no una nota. La devolución está en los comentarios.",
+                options: [{ text: "Volver a decidir", target: "c10", type: "retry" }]
+            },
+            x10c: {
+                graphic: "feedback",
+                title: "La devolución es para usarla",
+                body: "Los comentarios son información para mejorar tu próxima entrega. Ignorarlos es dejar sobre la mesa la ayuda más concreta que vas a recibir.",
+                options: [{ text: "Volver a decidir", target: "c10", type: "retry" }]
+            }
+        };
+
+        // Render Function
+        function renderScene(sceneKey) {
+            currentScene = sceneKey;
+            
+            if (sceneKey === 'end') {
+                renderEndScreen();
+                return;
+            }
+
+            const data = gameData[sceneKey];
+            if (!data) return;
+
+            // Header Elements
+            const badge = document.getElementById('stepBadge');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+
+            if (data.badge) {
+                badge.innerText = data.badge;
+                badge.classList.remove('hidden');
+                progressContainer.classList.remove('hidden');
+                progressBar.style.width = (data.progress || 0) + '%';
+            } else {
+                badge.classList.add('hidden');
+                progressContainer.classList.add('hidden');
+            }
+
+            // Scene Graphics and Texts
+            document.getElementById('sceneGraphic').innerHTML = getSVG(data.graphic);
+            document.getElementById('sceneTitle').innerText = data.title;
+            document.getElementById('sceneBody').innerHTML = data.body;
+
+            // Actions / Options Rendering
+            const actionArea = document.getElementById('actionArea');
+            actionArea.innerHTML = '';
+
+            data.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option w-full text-left p-4 rounded-lg font-semibold border flex items-center justify-between gap-3 text-sm sm:text-base ';
+                
+                if (opt.type === 'start' || opt.type === 'next') {
+                    btn.className += 'bg-unma-medium hover:bg-unma-primary text-white border-unma-medium';
+                } else if (opt.type === 'retry') {
+                    btn.className += 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300';
+                } else {
+                    btn.className += 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300 shadow-sm';
+                }
+
+                btn.innerHTML = `<span>${opt.text}</span> <span class="text-xs opacity-70">➔</span>`;
+                btn.onclick = () => handleChoice(data, opt);
+                actionArea.appendChild(btn);
+            });
+
+            // Auto-scroll to top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Notify parent Moodle iframe if embedded
+            notifyHeightChange();
+        }
+
+        // Choice Handler Logic
+        function handleChoice(currentSceneData, option) {
+            // Check first try correctness tracking
+            if (currentSceneData.themeId) {
+                const tid = currentSceneData.themeId;
+                if (firstTryAttempts[tid] === undefined) {
+                    firstTryAttempts[tid] = option.isCorrect === true;
+                }
+            }
+
+            if (option.isCorrect === true) {
+                playSound('success');
+            } else if (option.isCorrect === false) {
+                playSound('error');
+            } else {
+                playSound('click');
+            }
+
+            renderScene(option.target);
+        }
+
+        // End Screen Rendering
+        function renderEndScreen() {
+            playSound('success');
+
+            // Calculate First Try Score
+            let correctFirstTryCount = 0;
+            for (let i = 1; i <= totalThemesCount; i++) {
+                if (firstTryAttempts[i] === true) {
+                    correctFirstTryCount++;
+                }
+            }
+
+            document.getElementById('stepBadge').classList.add('hidden');
+            document.getElementById('progressContainer').classList.remove('hidden');
+            document.getElementById('progressBar').style.width = '100%';
+
+            document.getElementById('sceneGraphic').innerHTML = getSVG('trophy');
+            document.getElementById('sceneTitle').innerText = "Viernes, fin de la primera semana";
+
+            let feedbackText = "";
+            let feedbackColor = "";
+
+            if (correctFirstTryCount >= 6) {
+                feedbackText = "«Llegás a la segunda semana con el mapa en la mano.»";
+                feedbackColor = "bg-emerald-50 text-emerald-900 border-emerald-300";
+            } else if (correctFirstTryCount >= 3) {
+                feedbackText = "«Hubo algún tropiezo, pero sabés cómo volver al camino. Eso es lo que importa.»";
+                feedbackColor = "bg-amber-50 text-amber-900 border-amber-300";
+            } else {
+                feedbackText = "«Recién empezás, y está perfecto. Los tutoriales están para eso: volvé a la aventura cuando quieras.»";
+                feedbackColor = "bg-blue-50 text-blue-900 border-blue-300";
+            }
+
+            document.getElementById('sceneBody').innerHTML = `
+                <p>Pasaron cinco días. Entraste al campus, te presentaste, entregaste tu primer documento y leíste tu primera devolución.</p>
+                <p>Todavía falta mucho. Pero ahora sabés cómo moverte, a quién escribirle y dónde mirar cuando algo no sale.</p>
+                
+                <div class="mt-6 p-5 rounded-lg border ${feedbackColor}">
+                    <div class="text-xs font-bold uppercase tracking-wider mb-1">Tu resultado general</div>
+                    <div class="text-xl font-bold mb-2">Resolviste ${correctFirstTryCount} de 7 temas a la primera</div>
+                    <p class="text-sm font-semibold italic">${feedbackText}</p>
+                </div>
+            `;
+
+            const actionArea = document.getElementById('actionArea');
+            actionArea.innerHTML = '';
+
+            const restartBtn = document.createElement('button');
+            restartBtn.className = 'btn-option w-full text-center p-4 rounded-lg font-bold bg-unma-medium hover:bg-unma-primary text-white border-unma-medium';
+            restartBtn.innerHTML = '🔄 Reiniciar Aventura';
+            restartBtn.onclick = () => {
+                firstTryAttempts = {};
+                playSound('click');
+                renderScene('intro');
+            };
+
+            actionArea.appendChild(restartBtn);
+            notifyHeightChange();
+        }
+
+        // Notify Moodle iframe for dynamic resizing
+        function notifyHeightChange() {
+            setTimeout(() => {
+                const height = document.body.scrollHeight;
+                window.parent.postMessage({ frameHeight: height }, '*');
+            }, 100);
+        }
+
+        // Initialize App
+        window.onload = () => {
+            renderScene('intro');
+        };
+    </script>
+</body>
+</html>
